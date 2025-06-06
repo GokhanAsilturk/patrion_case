@@ -8,11 +8,14 @@ export interface LoginCredentials {
 export interface LoginResponse {
   token: string;
   user: {
-    id: string;
-    name: string;
+    id: number;
+    username: string;
     email: string;
+    fullName: string;
+    company_id?: number;
     role: string;
-    companyId?: string;
+    createdAt: string;
+    updatedAt: string;
   };
 }
 
@@ -24,19 +27,25 @@ export interface UserResponse {
   companyId?: string;
 }
 
-const authApi = {
-  login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>('/auth/login', credentials);
+const authApi = {  login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
+    const response = await api.post('/auth/login', credentials);
     
-    // API yanıtından token'ı kontrol et
-    if (!response.data?.token) {
+    // Backend'den gelen response yapısı: { status, message, data: { token, user } }
+    const { data } = response.data;
+    
+    // Token ve user bilgilerini kontrol et
+    if (!data?.token || !data?.user) {
       throw new Error('Token alınamadı');
     }
     
     // Token'ı localStorage'a kaydet
-    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('token', data.token);
     
-    return response.data;
+    // Frontend'in beklediği yapıya dönüştür
+    return {
+      token: data.token,
+      user: data.user
+    };
   },
   
   getCurrentUser: async (): Promise<UserResponse> => {

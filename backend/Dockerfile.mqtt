@@ -1,0 +1,4 @@
+FROM eclipse-mosquitto:2.0.18
+
+# Copy configuration files if needed
+COPY ./backend/mosquitto/config/mosquitto.conf /mosquitto/config/

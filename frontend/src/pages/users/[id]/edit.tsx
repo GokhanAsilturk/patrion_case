@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
-import MainLayout from '../../layouts/MainLayout';
-import UserForm from '../../components/UserForm';
-import { RootState, AppDispatch } from '../../redux/store';
-import { getUsers, updateUserAsync } from '../../redux/slices/userSlice';
+import MainLayout from '../../../layouts/MainLayout';
+import UserForm from '../../../components/UserForm';
+import { RootState, AppDispatch } from '../../../redux/store';
+import { getUsers, updateUserAsync } from '../../../redux/slices/userSlice';
 
 const EditUserPage: React.FC = () => {
   const router = useRouter();

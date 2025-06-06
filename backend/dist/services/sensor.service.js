@@ -16,26 +16,21 @@ exports.getSensorDataByTimeRange = exports.getLatestSensorData = exports.insertS
 const database_1 = __importDefault(require("../config/database"));
 const sensor_model_1 = require("../models/sensor.model");
 const socket_1 = require("../socket");
-// MQTT'den gelen sensör verisini işle ve kaydet
 const saveSensorData = (data) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Sensör ID'nin veritabanında olup olmadığını kontrol et
         const sensor = yield (0, sensor_model_1.getSensorBySensorId)(data.sensor_id);
         if (!sensor) {
             console.warn(`Bilinmeyen sensör ID: ${data.sensor_id}`);
             return null;
         }
-        // Veriyi standardize et
         const sensorData = {
             sensor_id: data.sensor_id,
-            timestamp: new Date(data.timestamp * 1000), // Unix timestamp'i Date'e çevir
+            timestamp: new Date(data.timestamp * 1000),
             temperature: data.temperature,
             humidity: data.humidity,
-            raw_data: data // Tüm ham veriyi sakla
+            raw_data: data
         };
-        // Veriyi veritabanına kaydet
         const savedData = yield (0, exports.insertSensorData)(sensorData);
-        // Gerçek zamanlı veri yayını yap
         socket_1.io === null || socket_1.io === void 0 ? void 0 : socket_1.io.emit(`sensor/${data.sensor_id}/data`, savedData);
         return savedData;
     }
@@ -45,7 +40,6 @@ const saveSensorData = (data) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.saveSensorData = saveSensorData;
-// Sensör verisini veritabanına kaydet
 const insertSensorData = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const { sensor_id, timestamp, temperature, humidity, pressure, raw_data } = data;
     const query = `
@@ -70,7 +64,6 @@ const insertSensorData = (data) => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.insertSensorData = insertSensorData;
-// Bir sensörün en son verisini getir
 const getLatestSensorData = (sensor_id) => __awaiter(void 0, void 0, void 0, function* () {
     const query = `
     SELECT id, sensor_id, timestamp, temperature, humidity, pressure, raw_data, created_at as "createdAt"
@@ -89,7 +82,6 @@ const getLatestSensorData = (sensor_id) => __awaiter(void 0, void 0, void 0, fun
     }
 });
 exports.getLatestSensorData = getLatestSensorData;
-// Belirli bir zaman aralığındaki sensör verilerini getir
 const getSensorDataByTimeRange = (sensor_id, start, end) => __awaiter(void 0, void 0, void 0, function* () {
     const query = `
     SELECT id, sensor_id, timestamp, temperature, humidity, pressure, raw_data, created_at as "createdAt"

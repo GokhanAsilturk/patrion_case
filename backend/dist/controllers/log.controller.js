@@ -17,18 +17,156 @@ const log_model_1 = require("../models/log.model");
 const log_1 = require("../types/log");
 const user_1 = require("../types/user");
 const database_1 = __importDefault(require("../config/database"));
+const date_utils_1 = require("../utils/date-utils");
+// Hata sınıflarını içe aktar
+const error_1 = require("../utils/error");
+const error_2 = require("../types/error");
 /**
- * Kullanıcı log kayıtlarını listeler
- * Sistem admin: Tüm logları görebilir
- * Şirket admin: Kendi şirketindeki kullanıcıların loglarını görebilir
- * Kullanıcı: Sadece kendi loglarını görebilir
+ * @swagger
+ * /logs/users/{userId}:
+ *   get:
+ *     summary: Belirli bir kullanıcının log kayıtlarını getirir
+ *     description: Kullanıcıya ait tüm log kayıtlarını listeler. System Admin tüm logları, Company Admin kendi şirketindeki kullanıcıların loglarını, User ise sadece kendi loglarını görebilir.
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Logları görüntülenecek kullanıcının ID'si
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Başlangıç tarihi (Format - GG/AA/YYYY)"
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Bitiş tarihi (Format - GG/AA/YYYY)"
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Sayfa numarası
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Bir sayfada gösterilecek log sayısı
+ *     responses:
+ *       200:
+ *         description: Kullanıcı logları başarıyla getirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 results:
+ *                   type: integer
+ *                   example: 10
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     logs:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/UserLog'
+ *       401:
+ *         description: Kimlik doğrulama hatası
+ *       403:
+ *         description: Yetkisiz erişim
+ *       500:
+ *         description: Sunucu hatası
  */
-const getUserLogs = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+/**
+ * @swagger
+ * /logs/my-logs:
+ *   get:
+ *     summary: Kendi log kayıtlarını getirir
+ *     description: Oturum açmış kullanıcının kendi log kayıtlarını listeler. Her kullanıcı kendi loglarını görüntüleme hakkına sahiptir.
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Başlangıç tarihi (Format - GG/AA/YYYY)"
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Bitiş tarihi (Format - GG/AA/YYYY)"
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Sayfa numarası
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Bir sayfada gösterilecek log sayısı
+ *     responses:
+ *       200:
+ *         description: Kullanıcı logları başarıyla getirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 results:
+ *                   type: integer
+ *                   example: 10
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     logs:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/UserLog'
+ *       401:
+ *         description: Kimlik doğrulama hatası
+ *       500:
+ *         description: Sunucu hatası
+ */
+const getUserLogs = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
     try {
         // Eğer userId params'tan gelmiyorsa, oturum açmış kullanıcının id'sini kullan
         const userId = parseInt(req.params.userId, 10) || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 0;
         const userRole = (_b = req.user) === null || _b === void 0 ? void 0 : _b.role;
+        // Tarih filtresi için parametreleri al
+        const startDateStr = req.query.startDate;
+        const endDateStr = req.query.endDate;
+        // Eğer tarih parametreleri varsa, parse et
+        const startDate = startDateStr ? (0, date_utils_1.parseLocalDate)(startDateStr) : null;
+        const endDate = endDateStr ? (0, date_utils_1.parseLocalDate)(endDateStr) : null;
+        // Geçersiz tarih formatı kontrolü
+        if ((startDateStr && !startDate) || (endDateStr && !endDate)) {
+            throw new error_1.ValidationError('Geçersiz tarih formatı. Lütfen GG/AA/YYYY formatında tarih girin (örn: 16/05/2025)');
+        }
         // Erişim kontrolü
         if (userRole !== user_1.UserRole.SYSTEM_ADMIN && ((_c = req.user) === null || _c === void 0 ? void 0 : _c.id) !== userId) {
             // Şirket yöneticileri için şirket bazlı erişim kontrolü ek olarak yapılabilir
@@ -37,37 +175,151 @@ const getUserLogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 // Şirket yöneticisi, şirketindeki kullanıcıların loglarını görebilmeli
             }
             else {
-                res.status(403).json({
-                    status: 'error',
-                    message: 'Bu kullanıcının log kayıtlarına erişim yetkiniz bulunmamaktadır'
-                });
-                return;
+                throw new error_1.AuthorizationError('Bu kullanıcının log kayıtlarına erişim yetkiniz bulunmamaktadır');
             }
         }
-        // Log kaydı oluştur
         yield (0, log_model_1.createUserLog)({
             user_id: ((_d = req.user) === null || _d === void 0 ? void 0 : _d.id) || 0,
             action: log_1.LogAction.VIEWED_LOGS,
-            details: { target_user_id: userId },
+            details: {
+                target_user_id: userId,
+                start_date: startDateStr,
+                end_date: endDateStr
+            },
             ip_address: req.ip
         });
-        const logs = yield (0, log_model_1.getUserLogsByUserId)(userId);
+        // Tarih filtresi içeren sorguyu oluştur
+        let query = `
+      SELECT id, user_id, action, details, ip_address, timestamp, created_at as "createdAt"
+      FROM user_logs
+      WHERE user_id = $1
+    `;
+        const queryParams = [userId];
+        if (startDate) {
+            query += ` AND timestamp >= $${queryParams.length + 1}`;
+            queryParams.push(startDate.toISOString());
+        }
+        if (endDate) {
+            // Bitiş tarihine 1 gün ekleyerek tam günü kapsayacak şekilde filtreleme
+            const nextDay = new Date(endDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            query += ` AND timestamp < $${queryParams.length + 1}`;
+            queryParams.push(nextDay.toISOString());
+        }
+        query += ` ORDER BY timestamp DESC`;
+        // Sayfalama için parametreleri al
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const offset = (page - 1) * limit;
+        // Sayfalama ekle
+        query += ` LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+        queryParams.push(limit, offset);
+        // Sorguyu çalıştır
+        const { rows } = yield database_1.default.query(query, queryParams).catch(err => {
+            throw new error_1.DatabaseError(`Veritabanı sorgulama hatası: ${err.message}`, error_2.ErrorCode.DB_QUERY_ERROR, { query });
+        });
+        // Toplam kayıt sayısını al
+        const countQuery = `
+      SELECT COUNT(*) FROM user_logs 
+      WHERE user_id = $1
+      ${startDate ? ' AND timestamp >= $2' : ''}
+      ${endDate ? ` AND timestamp < $${startDate ? 3 : 2}` : ''}
+    `;
+        const countParams = [userId];
+        if (startDate)
+            countParams.push(startDate.toISOString());
+        if (endDate) {
+            const nextDay = new Date(endDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            countParams.push(nextDay.toISOString());
+        }
+        const countResult = yield database_1.default.query(countQuery, countParams).catch(err => {
+            throw new error_1.DatabaseError(`Toplam kayıt sayısı alınırken hata: ${err.message}`, error_2.ErrorCode.DB_QUERY_ERROR);
+        });
+        const totalCount = parseInt(countResult.rows[0].count, 10);
         res.json({
             status: 'success',
-            results: logs.length,
-            data: { logs }
+            results: rows.length,
+            total: totalCount,
+            page,
+            totalPages: Math.ceil(totalCount / limit),
+            data: { logs: rows }
         });
     }
     catch (error) {
-        res.status(500).json({
-            status: 'error',
-            message: error instanceof Error ? error.message : 'Log kayıtları alınırken hata oluştu'
-        });
+        // Hata middleware'inin işleyebilmesi için hatayı next fonksiyonuna iletiyoruz
+        next(error);
     }
 });
 exports.getUserLogs = getUserLogs;
 /**
- * Belirli bir eylem tipi için log kayıtlarını listeler
+ * @swagger
+ * /logs/actions/{action}:
+ *   get:
+ *     summary: Belirli bir eylem tipine ait log kayıtlarını getirir
+ *     description: Belirtilen eylem tipine göre filtrelenmiş log kayıtlarını listeler.
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: action
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Log eylem tipi (örn. 'login', 'viewed_logs', 'invalid_sensor_data' vb.)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Başlangıç tarihi (Format - GG/AA/YYYY)"
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Bitiş tarihi (Format - GG/AA/YYYY)"
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Sayfa numarası
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Bir sayfada gösterilecek log sayısı
+ *     responses:
+ *       200:
+ *         description: Filtrelenmiş log kayıtları başarıyla getirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 results:
+ *                   type: integer
+ *                   example: 10
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     logs:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/UserLog'
+ *       401:
+ *         description: Kimlik doğrulama hatası
+ *       403:
+ *         description: Yetkisiz erişim
+ *       500:
+ *         description: Sunucu hatası
  */
 const getLogsByAction = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -96,7 +348,64 @@ const getLogsByAction = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.getLogsByAction = getLogsByAction;
 /**
- * Log analizlerini getirir
+ * @swagger
+ * /logs/analytics:
+ *   get:
+ *     summary: Log analitiklerini getirir
+ *     description: Sistem üzerindeki log kayıtlarını analiz ederek özet istatistikler sunar.
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 7
+ *         description: Kaç günlük verinin analiz edileceği
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Başlangıç tarihi (Format - GG/AA/YYYY)"
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Bitiş tarihi (Format - GG/AA/YYYY)"
+ *       - in: query
+ *         name: groupBy
+ *         schema:
+ *           type: string
+ *           enum: [daily, weekly, monthly]
+ *         description: Sonuçların nasıl gruplandırılacağı
+ *     responses:
+ *       200:
+ *         description: Log analitikleri başarıyla getirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     analytics:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/LogAnalytics'
+ *       401:
+ *         description: Kimlik doğrulama hatası
+ *       403:
+ *         description: Yetkisiz erişim
+ *       500:
+ *         description: Sunucu hatası
  */
 const getLogsAnalytics = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -124,7 +433,102 @@ const getLogsAnalytics = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 exports.getLogsAnalytics = getLogsAnalytics;
 /**
- * Kullanıcı davranış takibi için istatistikleri getirir
+ * @swagger
+ * /logs/users/{userId}/activity:
+ *   get:
+ *     summary: Kullanıcının aktivite istatistiklerini getirir
+ *     description: Belirli bir kullanıcının sistem üzerindeki aktivitelerini istatistiksel olarak analiz eder.
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Aktivite istatistikleri görüntülenecek kullanıcının ID'si
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Başlangıç tarihi (Format - GG/AA/YYYY)"
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Bitiş tarihi (Format - GG/AA/YYYY)"
+ *     responses:
+ *       200:
+ *         description: Kullanıcı aktivite istatistikleri başarıyla getirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     activity_stats:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/UserActivityStats'
+ *       401:
+ *         description: Kimlik doğrulama hatası
+ *       403:
+ *         description: Yetkisiz erişim
+ *       500:
+ *         description: Sunucu hatası
+ */
+/**
+ * @swagger
+ * /logs/my-activity:
+ *   get:
+ *     summary: Kendi aktivite istatistiklerini getirir
+ *     description: Oturum açmış kullanıcının sistem üzerindeki aktivitelerini istatistiksel olarak analiz eder.
+ *     tags: [Logs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Başlangıç tarihi (Format - GG/AA/YYYY)"
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Bitiş tarihi (Format - GG/AA/YYYY)"
+ *     responses:
+ *       200:
+ *         description: Kullanıcı aktivite istatistikleri başarıyla getirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     activity_stats:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/UserActivityStats'
+ *       401:
+ *         description: Kimlik doğrulama hatası
+ *       500:
+ *         description: Sunucu hatası
  */
 const getUserActivityStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;

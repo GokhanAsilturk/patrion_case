@@ -1,0 +1,4 @@
+{"level":"error","message":"Veritabanına bağlanırken hata oluştu","metadata":{"error":"connect ECONNREFUSED 172.19.0.3:5432"},"service":"patrion-sensor-service","timestamp":"2025-06-06 12:48:00"}
+{"level":"error","message":"Veritabanı tabloları oluşturulurken hata","metadata":{"error":"connect ECONNREFUSED 172.19.0.3:5432"},"service":"patrion-sensor-service","timestamp":"2025-06-06 12:48:00"}
+{"level":"error","message":"Şirket seed işlemi sırasında hata","metadata":{"error":"connect ECONNREFUSED 172.19.0.3:5432"},"service":"patrion-sensor-service","timestamp":"2025-06-06 12:48:00"}
+{"level":"error","message":"Kullanıcı seed işlemi sırasında hata","metadata":{"error":"connect ECONNREFUSED 172.19.0.3:5432"},"service":"patrion-sensor-service","timestamp":"2025-06-06 12:48:00"}

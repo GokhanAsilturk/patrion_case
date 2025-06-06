@@ -24,10 +24,9 @@ const UserProfilePage: React.FC = () => {
     <MainLayout>
       <Paper sx={{ p: 3 }}>
         <Typography variant="h5" gutterBottom>Kullanıcı Profili</Typography>
-        <Typography><b>Ad:</b> {user.name}</Typography>
-        <Typography><b>Email:</b> {user.email}</Typography>
+        <Typography><b>Ad:</b> {user.name}</Typography>        <Typography><b>Email:</b> {user.email}</Typography>
         <Typography><b>Rol:</b> {user.role}</Typography>
-        <Typography><b>Şirket:</b> {user.company || '-'}</Typography>
+        <Typography><b>Şirket:</b> {user.companyId || '-'}</Typography>
       </Paper>
     </MainLayout>
   );

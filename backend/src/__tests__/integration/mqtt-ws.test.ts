@@ -2,6 +2,7 @@ import { WebSocket } from 'ws';
 import mqtt from 'mqtt';
 import { startServer, closeServer } from '../../index';
 import { publishMessage, closeMqttClient } from '../../services/mqtt.service';
+import test from 'node:test';
 
 // Test süresi uzun olabilir, timeout'u artıralım
 jest.setTimeout(30000);
@@ -34,7 +35,7 @@ describe('MQTT ve WebSocket Entegrasyon Testleri', () => {
   });
   
   test('WebSocket istemcisi bağlantı kurabilmeli', (done) => {
-    wsClient = new WebSocket('ws://localhost:3000/sensors');
+    wsClient = new WebSocket('ws://localhost:4000/sensors');
     
     wsClient.on('open', () => {
       expect(wsClient.readyState).toBe(WebSocket.OPEN);
@@ -48,7 +49,7 @@ describe('MQTT ve WebSocket Entegrasyon Testleri', () => {
   
   test('WebSocket istemcisi sensör verisi alabilmeli', (done) => {
     if (wsClient.readyState !== WebSocket.OPEN) {
-      wsClient = new WebSocket('ws://localhost:3000/sensors');
+      wsClient = new WebSocket('ws://localhost:4000/sensors');
       
       wsClient.on('open', () => {
         runTest();

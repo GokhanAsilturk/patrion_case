@@ -1,0 +1,3 @@
+FROM postgres:14-alpine
+
+# Custom configurations can be added here if needed

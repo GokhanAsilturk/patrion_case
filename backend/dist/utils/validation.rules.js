@@ -45,6 +45,11 @@ exports.userValidation = {
             .notEmpty().withMessage('Kullanıcı ID zorunludur')
             .isInt().withMessage('Kullanıcı ID bir tam sayı olmalıdır')
     ],
+    getByUsername: [
+        (0, express_validator_1.param)('username')
+            .notEmpty().withMessage('Kullanıcı adı zorunludur')
+            .isLength({ min: 3 }).withMessage('Kullanıcı adı en az 3 karakter olmalıdır')
+    ],
     update: [
         (0, express_validator_1.param)('id')
             .notEmpty().withMessage('Kullanıcı ID zorunludur')

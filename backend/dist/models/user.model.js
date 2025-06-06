@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUser = exports.getAllUsers = exports.findUsersByCompanyId = exports.findUserById = exports.findUserByEmail = exports.createUser = exports.createUsersTable = void 0;
+exports.findUserByUsername = exports.updateUser = exports.getAllUsers = exports.findUsersByCompanyId = exports.findUserById = exports.findUserByEmail = exports.createUser = exports.createUsersTable = void 0;
 const database_1 = __importDefault(require("../config/database"));
 const user_1 = require("../types/user");
 const createUsersTable = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -180,3 +180,19 @@ const updateUser = (id, userData) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.updateUser = updateUser;
+const findUserByUsername = (username) => __awaiter(void 0, void 0, void 0, function* () {
+    const query = `
+    SELECT id, username, email, password, full_name as "fullName", company_id, role, created_at as "createdAt", updated_at as "updatedAt"
+    FROM users
+    WHERE username = $1;
+  `;
+    try {
+        const result = yield database_1.default.query(query, [username]);
+        return result.rows[0] || null;
+    }
+    catch (error) {
+        console.error('Kullanıcı adı ile kullanıcı aranırken hata:', error instanceof Error ? error.message : 'Bilinmeyen hata');
+        throw error;
+    }
+});
+exports.findUserByUsername = findUserByUsername;

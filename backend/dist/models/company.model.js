@@ -60,6 +60,10 @@ const getCompanyById = (id) => __awaiter(void 0, void 0, void 0, function* () {
   `;
     try {
         const result = yield database_1.default.query(query, [id]);
+        if (!result || !result.rows) {
+            console.error('Sorgu sonucu bulunamadı veya geçersiz');
+            return null;
+        }
         return result.rows[0] || null;
     }
     catch (error) {

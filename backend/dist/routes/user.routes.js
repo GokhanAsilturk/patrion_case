@@ -39,13 +39,16 @@ const auth_middleware_1 = require("../middlewares/auth.middleware");
 const validator_middleware_1 = require("../middlewares/validator.middleware");
 const user_1 = require("../types/user");
 const validation_rules_1 = require("../utils/validation.rules");
+const log_tracker_middleware_1 = require("../middlewares/log-tracker.middleware");
 const router = (0, express_1.Router)();
 // Kimlik doğrulama gerektiren rotalar
-router.get('/profile', auth_middleware_1.authenticate, userController.getProfile);
+router.get('/profile', auth_middleware_1.authenticate, log_tracker_middleware_1.logUserProfileView, userController.getProfile);
 // Sadece admin kullanıcılarının erişebileceği rotalar
 router.get('/', auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)([user_1.UserRole.SYSTEM_ADMIN]), userController.getAllUsers);
-// ID'ye göre kullanıcı getirme
-router.get('/:id', auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)([user_1.UserRole.SYSTEM_ADMIN, user_1.UserRole.COMPANY_ADMIN]), (0, validator_middleware_1.validate)(validation_rules_1.userValidation.getById), userController.getUserById);
+// Kullanıcı adına göre kullanıcı getirme
+router.get('/username/:username', auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)([user_1.UserRole.SYSTEM_ADMIN, user_1.UserRole.COMPANY_ADMIN]), (0, validator_middleware_1.validate)(validation_rules_1.userValidation.getByUsername), log_tracker_middleware_1.logUserProfileView, userController.getUserByUsername);
+// ID'ye göre kullanıcı getirme - Bunu en sona alıyoruz çünkü "/:id" tüm parametreleri yakalayabilir
+router.get('/:id', auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)([user_1.UserRole.SYSTEM_ADMIN, user_1.UserRole.COMPANY_ADMIN]), (0, validator_middleware_1.validate)(validation_rules_1.userValidation.getById), log_tracker_middleware_1.logUserProfileView, userController.getUserById);
 // Kullanıcı bilgilerini güncelleme
 router.put('/:id', auth_middleware_1.authenticate, (0, auth_middleware_1.authorize)([user_1.UserRole.SYSTEM_ADMIN, user_1.UserRole.COMPANY_ADMIN]), (0, validator_middleware_1.validate)(validation_rules_1.userValidation.update), userController.updateUser);
 // Alternatif olarak izin tabanlı yetkilendirme de kullanılabilir

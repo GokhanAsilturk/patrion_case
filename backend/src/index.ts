@@ -45,44 +45,82 @@ app.use(httpLogger);
 // Global rate limiter - tüm API'ler için
 app.use(standardRateLimiter);
 
-// Initialize database tables
-const initDatabase = async () => {
-  try {
-    // İlk önce şirket tablosunu oluştur (users tablosu company_id foreign key için buna bağlı)
-    await createCompaniesTable();
-    log.info('Şirket tablosu başarıyla oluşturuldu');
-    
-    // Sonra kullanıcı tablosunu oluştur (bu tabloda company_id foreign key'i var)
-    await createUsersTable();
-    log.info('Kullanıcı tablosu başarıyla oluşturuldu');
-    
-    // Sensör tablolarını oluştur
-    await createSensorsTable();
-    log.info('Sensör tablosu başarıyla oluşturuldu');
-    
-    await createSensorDataTable();
-    log.info('Sensör veri tablosu başarıyla oluşturuldu');
-    
-    // Son olarak log tablosunu oluştur
-    await createUserLogsTable();
-    log.info('Kullanıcı log tablosu başarıyla oluşturuldu');
-
-    
-    
-    log.info('Veritabanı tabloları başarıyla oluşturuldu');
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    log.error('Veritabanı tabloları oluşturulurken hata', { error: errorMessage });
-    console.error('Veritabanı hata:', errorMessage);
+// Initialize database tables with retry mechanism
+const initDatabase = async (retries = 3, delay = 3000) => {
+  let attempts = 0;
+  
+  // Table creation retry loop
+  while (attempts < retries) {
+    try {
+      log.info(`Veritabanı tablolarını oluşturma denemesi: ${attempts + 1}/${retries}`);
+      
+      // İlk önce şirket tablosunu oluştur (users tablosu company_id foreign key için buna bağlı)
+      await createCompaniesTable();
+      log.info('Şirket tablosu başarıyla oluşturuldu');
+      
+      // Sonra kullanıcı tablosunu oluştur (bu tabloda company_id foreign key'i var)
+      await createUsersTable();
+      log.info('Kullanıcı tablosu başarıyla oluşturuldu');
+      
+      // Sensör tablolarını oluştur
+      await createSensorsTable();
+      log.info('Sensör tablosu başarıyla oluşturuldu');
+      
+      await createSensorDataTable();
+      log.info('Sensör veri tablosu başarıyla oluşturuldu');
+      
+      // Son olarak log tablosunu oluştur
+      await createUserLogsTable();
+      log.info('Kullanıcı log tablosu başarıyla oluşturuldu');
+      
+      log.info('Veritabanı tabloları başarıyla oluşturuldu');
+      break; // Başarılı olunca döngüden çık
+    } catch (error) {
+      attempts++;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log.error('Veritabanı tabloları oluşturulurken hata', { 
+        error: errorMessage,
+        attempt: attempts,
+        remainingRetries: retries - attempts
+      });
+      console.error(`Veritabanı hata (Deneme ${attempts}/${retries}):`, errorMessage);
+      
+      if (attempts >= retries) {
+        log.error('Maksimum yeniden deneme sayısına ulaşıldı, tablo oluşturma başarısız');
+        break;
+      }
+      
+      log.info(`${delay/1000} saniye sonra tablolar yeniden oluşturulmayı deneyecek...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
   }
-  try {
-    // oluşturulan tablolara seed verileri ekle
-    await seedDatabase();
-    log.info('Seed verileri başarıyla eklendi');
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    log.error('Seed verileri ekleme hatası', { error: errorMessage });
-    console.error('Seed verileri ekleme hatası:', errorMessage);
+  
+  // Seed data retry loop - separate from table creation
+  attempts = 0;
+  while (attempts < retries) {
+    try {
+      log.info(`Seed verilerini ekleme denemesi: ${attempts + 1}/${retries}`);
+      await seedDatabase();
+      log.info('Seed verileri başarıyla eklendi');
+      break; // Başarılı olunca döngüden çık
+    } catch (error) {
+      attempts++;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log.error('Seed verileri ekleme hatası', { 
+        error: errorMessage,
+        attempt: attempts,
+        remainingRetries: retries - attempts
+      });
+      console.error(`Seed verileri ekleme hatası (Deneme ${attempts}/${retries}):`, errorMessage);
+      
+      if (attempts >= retries) {
+        log.error('Maksimum yeniden deneme sayısına ulaşıldı, seed verileri ekleme başarısız');
+        break;
+      }
+      
+      log.info(`${delay/1000} saniye sonra seed verileri yeniden eklenmeyi deneyecek...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
   }
 };
 

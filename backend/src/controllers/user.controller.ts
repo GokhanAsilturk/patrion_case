@@ -163,25 +163,10 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
  *     responses:
  *       200:
  *         description: Kullanıcı başarıyla getirildi
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       type: object
  *       403:
- *         description: Yetkisiz erişim
+ *         description: Bu kullanıcıyı görüntüleme yetkiniz yok
  *       404:
  *         description: Kullanıcı bulunamadı
- *       500:
- *         description: Sunucu hatası
  *   put:
  *     summary: Kullanıcı bilgilerini günceller
  *     tags: [Users]
@@ -296,6 +281,79 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
     res.status(500).json({
       status: 'error',
       message: error instanceof Error ? error.message : 'Kullanıcı güncellenirken bir hata oluştu'
+    });
+  }
+};
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   get:
+ *     summary: ID'ye göre kullanıcı getirir
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Kullanıcı ID
+ *     responses:
+ *       200:
+ *         description: Kullanıcı başarıyla getirildi
+ *       403:
+ *         description: Bu kullanıcıyı görüntüleme yetkiniz yok
+ *       404:
+ *         description: Kullanıcı bulunamadı
+ */
+export const getUserById = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = parseInt(req.params.id, 10);
+    
+    // Kendi şirketimin kullanıcısını görüntüleyip görüntüleyemeyeceğimi kontrol et
+    if (req.user?.role === 'company_admin') {
+      const requestedUser = await userModel.findUserById(userId);
+      
+      if (!requestedUser || requestedUser.company_id !== req.user.company_id) {
+        res.status(403).json({
+          status: 'error',
+          message: 'Bu kullanıcıyı görüntüleme yetkiniz yok'
+        });
+        return;
+      }
+    }
+    
+    const user = await userModel.findUserById(userId);
+    
+    if (!user) {
+      res.status(404).json({
+        status: 'error',
+        message: 'Kullanıcı bulunamadı'
+      });
+      return;
+    }
+    
+    // Kullanıcının profilini görüntüleme log kaydını oluştur
+    await createUserLog({
+      user_id: req.user?.id as number,
+      action: LogAction.VIEWED_USER_PROFILE,
+      details: { viewed_user_id: userId },
+      ip_address: req.ip
+    });
+    
+    // Hassas bilgileri çıkart
+    const { password, ...userWithoutPassword } = user;
+    
+    res.status(200).json({
+      status: 'success',
+      data: { user: userWithoutPassword }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Kullanıcı bilgileri alınırken bir hata oluştu'
     });
   }
 };

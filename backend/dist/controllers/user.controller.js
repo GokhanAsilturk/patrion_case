@@ -53,7 +53,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUser = exports.getUserById = exports.getAllUsers = exports.getProfile = void 0;
+exports.getUserByUsername = exports.getUserById = exports.updateUser = exports.getAllUsers = exports.getProfile = void 0;
 const userModel = __importStar(require("../models/user.model"));
 const log_model_1 = require("../models/log.model");
 const log_1 = require("../types/log");
@@ -102,7 +102,69 @@ const getProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.getProfile = getProfile;
 /**
- * Tüm kullanıcıları listeler (sadece admin için)
+ * @swagger
+ * /users/profile:
+ *   get:
+ *     summary: Oturum açmış kullanıcının profilini getirir
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Kullanıcı profili başarıyla getirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *       401:
+ *         description: Kimlik doğrulama gerekli
+ *       404:
+ *         description: Kullanıcı bulunamadı
+ *       500:
+ *         description: Sunucu hatası
+ */
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Tüm kullanıcıları listeler
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Kullanıcılar başarıyla listelendi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 results:
+ *                   type: integer
+ *                   example: 5
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *       403:
+ *         description: Bu işleme yetkiniz yok, sadece sistem admin kullanabilir
+ *       500:
+ *         description: Sunucu hatası
  */
 const getAllUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -131,55 +193,77 @@ const getAllUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.getAllUsers = getAllUsers;
 /**
- * ID'ye göre kullanıcı getirir
+ * @swagger
+ * /users/{id}:
+ *   get:
+ *     summary: ID'ye göre kullanıcı getirir
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Kullanıcı ID
+ *     responses:
+ *       200:
+ *         description: Kullanıcı başarıyla getirildi
+ *       403:
+ *         description: Bu kullanıcıyı görüntüleme yetkiniz yok
+ *       404:
+ *         description: Kullanıcı bulunamadı
+ *   put:
+ *     summary: Kullanıcı bilgilerini günceller
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Kullanıcı ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               companyId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Kullanıcı başarıyla güncellendi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *       403:
+ *         description: Yetkisiz erişim
+ *       404:
+ *         description: Kullanıcı bulunamadı
+ *       500:
+ *         description: Sunucu hatası
  */
-const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    try {
-        const userId = parseInt(req.params.id, 10);
-        // Kendi şirketimin kullanıcısını görüntüleyip görüntüleyemeyeceğimi kontrol et
-        if (((_a = req.user) === null || _a === void 0 ? void 0 : _a.role) === 'company_admin') {
-            const requestedUser = yield userModel.findUserById(userId);
-            if (!requestedUser || requestedUser.company_id !== req.user.company_id) {
-                res.status(403).json({
-                    status: 'error',
-                    message: 'Bu kullanıcıyı görüntüleme yetkiniz yok'
-                });
-                return;
-            }
-        }
-        const user = yield userModel.findUserById(userId);
-        if (!user) {
-            res.status(404).json({
-                status: 'error',
-                message: 'Kullanıcı bulunamadı'
-            });
-            return;
-        }
-        // Kullanıcının profil görüntüleme log kaydını oluştur
-        if (req.user) {
-            yield (0, log_model_1.createUserLog)({
-                user_id: req.user.id,
-                action: log_1.LogAction.VIEWED_USER_PROFILE,
-                details: { viewed_user_id: userId },
-                ip_address: req.ip
-            });
-        }
-        // Hassas bilgileri çıkart
-        const { password } = user, userWithoutPassword = __rest(user, ["password"]);
-        res.status(200).json({
-            status: 'success',
-            data: { user: userWithoutPassword }
-        });
-    }
-    catch (error) {
-        res.status(500).json({
-            status: 'error',
-            message: error instanceof Error ? error.message : 'Kullanıcı bilgileri alınırken bir hata oluştu'
-        });
-    }
-});
-exports.getUserById = getUserById;
 /**
  * Kullanıcı bilgilerini günceller
  */
@@ -240,3 +324,162 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.updateUser = updateUser;
+/**
+ * @swagger
+ * /users/{id}:
+ *   get:
+ *     summary: ID'ye göre kullanıcı getirir
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Kullanıcı ID
+ *     responses:
+ *       200:
+ *         description: Kullanıcı başarıyla getirildi
+ *       403:
+ *         description: Bu kullanıcıyı görüntüleme yetkiniz yok
+ *       404:
+ *         description: Kullanıcı bulunamadı
+ */
+const getUserById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    try {
+        const userId = parseInt(req.params.id, 10);
+        // Kendi şirketimin kullanıcısını görüntüleyip görüntüleyemeyeceğimi kontrol et
+        if (((_a = req.user) === null || _a === void 0 ? void 0 : _a.role) === 'company_admin') {
+            const requestedUser = yield userModel.findUserById(userId);
+            if (!requestedUser || requestedUser.company_id !== req.user.company_id) {
+                res.status(403).json({
+                    status: 'error',
+                    message: 'Bu kullanıcıyı görüntüleme yetkiniz yok'
+                });
+                return;
+            }
+        }
+        const user = yield userModel.findUserById(userId);
+        if (!user) {
+            res.status(404).json({
+                status: 'error',
+                message: 'Kullanıcı bulunamadı'
+            });
+            return;
+        }
+        // Kullanıcının profilini görüntüleme log kaydını oluştur
+        yield (0, log_model_1.createUserLog)({
+            user_id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id,
+            action: log_1.LogAction.VIEWED_USER_PROFILE,
+            details: { viewed_user_id: userId },
+            ip_address: req.ip
+        });
+        // Hassas bilgileri çıkart
+        const { password } = user, userWithoutPassword = __rest(user, ["password"]);
+        res.status(200).json({
+            status: 'success',
+            data: { user: userWithoutPassword }
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: error instanceof Error ? error.message : 'Kullanıcı bilgileri alınırken bir hata oluştu'
+        });
+    }
+});
+exports.getUserById = getUserById;
+/**
+ * @swagger
+ * /users/username/{username}:
+ *   get:
+ *     summary: Kullanıcı adına göre kullanıcı bilgilerini getirir
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Kullanıcı adı
+ *     responses:
+ *       200:
+ *         description: Kullanıcı başarıyla getirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *       403:
+ *         description: Bu kullanıcıyı görüntüleme yetkiniz yok
+ *       404:
+ *         description: Kullanıcı bulunamadı
+ */
+const getUserByUsername = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
+    try {
+        const username = req.params.username;
+        // Erişim kontrolü
+        if (((_a = req.user) === null || _a === void 0 ? void 0 : _a.role) !== 'system_admin' && ((_b = req.user) === null || _b === void 0 ? void 0 : _b.role) !== 'company_admin') {
+            res.status(403).json({
+                status: 'error',
+                message: 'Bu bilgilere erişim yetkiniz yok'
+            });
+            return;
+        }
+        // Şirket admin rolündeki kullanıcılar sadece kendi şirketindeki kullanıcıları görüntüleyebilir
+        if (((_c = req.user) === null || _c === void 0 ? void 0 : _c.role) === 'company_admin') {
+            const requestedUser = yield userModel.findUserByUsername(username);
+            if (!requestedUser || requestedUser.company_id !== req.user.company_id) {
+                res.status(403).json({
+                    status: 'error',
+                    message: 'Bu kullanıcıyı görüntüleme yetkiniz yok'
+                });
+                return;
+            }
+        }
+        const user = yield userModel.findUserByUsername(username);
+        if (!user) {
+            res.status(404).json({
+                status: 'error',
+                message: 'Kullanıcı bulunamadı'
+            });
+            return;
+        }
+        // Kullanıcının profil görüntüleme log kaydını oluştur
+        if (req.user) {
+            yield (0, log_model_1.createUserLog)({
+                user_id: req.user.id,
+                action: log_1.LogAction.VIEWED_USER_PROFILE,
+                details: { viewed_username: username },
+                ip_address: req.ip
+            });
+        }
+        // Hassas bilgileri çıkart
+        const { password } = user, userWithoutPassword = __rest(user, ["password"]);
+        res.status(200).json({
+            status: 'success',
+            data: { user: userWithoutPassword }
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: error instanceof Error ? error.message : 'Kullanıcı bilgileri alınırken bir hata oluştu'
+        });
+    }
+});
+exports.getUserByUsername = getUserByUsername;

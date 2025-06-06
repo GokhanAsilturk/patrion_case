@@ -37,9 +37,10 @@ const express_1 = require("express");
 const authController = __importStar(require("../controllers/auth.controller"));
 const validator_middleware_1 = require("../middlewares/validator.middleware");
 const validation_rules_1 = require("../utils/validation.rules");
+const rate_limiter_middleware_1 = require("../middlewares/rate-limiter.middleware");
 const router = (0, express_1.Router)();
 // Kullanıcı kaydı
-router.post('/register', (0, validator_middleware_1.validate)(validation_rules_1.authValidation.register), authController.register);
+router.post('/register', rate_limiter_middleware_1.strictRateLimiter, (0, validator_middleware_1.validate)(validation_rules_1.authValidation.register), authController.register);
 // Kullanıcı girişi
-router.post('/login', (0, validator_middleware_1.validate)(validation_rules_1.authValidation.login), authController.login);
+router.post('/login', rate_limiter_middleware_1.strictRateLimiter, (0, validator_middleware_1.validate)(validation_rules_1.authValidation.login), authController.login);
 exports.default = router;

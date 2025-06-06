@@ -39,7 +39,7 @@ Bu talimatlar, projeyi yerel makinenizde geliştirme ve test amacıyla çalışt
 
 3. `.env` dosyasını oluşturun ve gerekli ortam değişkenlerini doldurun:
    ```
-   PORT=3000
+   PORT=4000
    NODE_ENV=development
    
    # Database
@@ -190,7 +190,7 @@ Gerçek zamanlı sensör verilerini istemcilere iletmek için Socket.IO kullanı
 ### Bağlantı Kurma
 
 ```javascript
-const socket = io('http://localhost:3000', {
+const socket = io('http://localhost:4000', {
   auth: {
     token: 'jwt_token'
   }
@@ -230,7 +230,7 @@ Bu uygulama, bir Docker konteyneri olarak veya geleneksel bir Node.js uygulamas�
 
    Bu komut, PostgreSQL veritabanı, MQTT broker ve Node.js uygulamasını içeren konteynerler oluşturacaktır.
 
-3. Uygulamaya `http://localhost:3000` adresinden erişebilirsiniz.
+3. Uygulamaya `http://localhost:4000` adresinden erişebilirsiniz.
 
 ### Geleneksel Deployment
 

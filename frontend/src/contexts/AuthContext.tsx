@@ -71,7 +71,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
-
   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);
     setError(null);
@@ -81,7 +80,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Token ve kullanıcı bilgilerini state'e kaydet
       if (response.user && response.token) {
-        setUser(response.user);
+        setUser({
+          id: String(response.user.id),
+          name: response.user.fullName,
+          email: response.user.email,
+          role: response.user.role,
+          companyId: response.user.company_id ? String(response.user.company_id) : undefined
+        });
         setIsAuthenticated(true);
         
         // Socket bağlantısını başlat
@@ -96,7 +101,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Giriş başarısız oldu. Lütfen tekrar deneyin.';
+      
+      // Hata mesajını belirle
+      let errorMessage = 'Giriş başarısız oldu. Lütfen tekrar deneyin.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      // Özel hata mesajları için kontrol
+      if (errorMessage.includes('Geçersiz kullanıcı adı veya şifre')) {
+        errorMessage = 'Geçersiz e-posta adresi veya şifre. Lütfen bilgilerinizi kontrol edin.';
+      }
+      
       setError(errorMessage);
       setIsAuthenticated(false);
       setUser(null);

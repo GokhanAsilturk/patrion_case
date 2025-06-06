@@ -52,56 +52,92 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.login = exports.register = void 0;
 const userModel = __importStar(require("../models/user.model"));
 const jwt_utils_1 = require("../utils/jwt.utils");
-const bcrypt = require("bcrypt");
-/**
- * Kullanıcı kaydı yapar
- */
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const error_1 = require("../utils/error");
+const error_2 = require("../types/error");
+const logger_1 = require("../utils/logger");
 const register = (userData) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Şifreyi hash'le (normalde bcrypt kullanılır)
-        const hashedPassword = bcrypt.hashSync(userData.password, 10);
-        // Kullanıcıyı veritabanına kaydet
-        const user = yield userModel.createUser(Object.assign(Object.assign({}, userData), { password: hashedPassword }));
-        // JWT token oluştur
-        const token = (0, jwt_utils_1.generateToken)(user);
-        // Hassas bilgileri çıkar ve yanıt döndür
+        const existingUser = yield userModel.findUserByEmail(userData.email);
+        if (existingUser) {
+            throw new error_1.DatabaseError('Bu email adresi zaten kayıtlı', error_2.ErrorCode.USER_ALREADY_EXISTS);
+        }
+        const saltRounds = 10;
+        const hashedPassword = yield bcrypt_1.default.hash(userData.password, saltRounds);
+        const _a = userData, { full_name } = _a, rest = __rest(_a, ["full_name"]);
+        const userDataWithCorrectFields = Object.assign(Object.assign({}, rest), { fullName: full_name !== null && full_name !== void 0 ? full_name : userData.fullName, password: hashedPassword });
+        const user = yield userModel.createUser(userDataWithCorrectFields)
+            .catch(err => {
+            throw new error_1.DatabaseError(`Kullanıcı oluşturulurken veritabanı hatası: ${err.message}`, error_2.ErrorCode.DB_QUERY_ERROR);
+        });
         const { password } = user, userWithoutPassword = __rest(user, ["password"]);
-        return Object.assign(Object.assign({}, userWithoutPassword), { token });
+        return Object.assign({}, userWithoutPassword);
     }
     catch (error) {
-        console.error('Kullanıcı kaydı sırasında hata:', error instanceof Error ? error.message : 'Bilinmeyen hata');
-        throw error;
+        // Özel hataları tekrar fırlat
+        if (error instanceof error_1.DatabaseError || error instanceof error_1.ValidationError) {
+            throw error;
+        }
+        // Tanımlanmamış hatalar için logla ve DatabaseError oluştur
+        logger_1.log.error('Kullanıcı kaydı sırasında tanımlanmamış hata:', {
+            error: error instanceof Error ? error.message : 'Bilinmeyen hata',
+            stack: error instanceof Error ? error.stack : undefined
+        });
+        throw new error_1.DatabaseError('Kullanıcı kaydı sırasında bir hata oluştu', error_2.ErrorCode.OPERATION_FAILED, { originalError: error instanceof Error ? error.message : 'Bilinmeyen hata' });
     }
 });
 exports.register = register;
-/**
- * Kullanıcı girişi yapar
- */
 const login = (credentials) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
-        // Email ile kullanıcıyı bul
-        const user = yield userModel.findUserByEmail(credentials.email);
+        logger_1.log.info('Giriş deneme başlatıldı', { email: credentials.email });
+        const user = yield userModel.findUserByEmail(credentials.email)
+            .catch(err => {
+            logger_1.log.error('Kullanıcı arama hatası', { error: err.message });
+            throw new error_1.DatabaseError(`Kullanıcı aranırken veritabanı hatası: ${err.message}`, error_2.ErrorCode.DB_QUERY_ERROR);
+        });
         if (!user) {
-            throw new Error('Kullanıcı bulunamadı');
+            logger_1.log.warn('Kullanıcı bulunamadı', { email: credentials.email });
+            throw new error_1.AuthenticationError('Geçersiz kullanıcı adı veya şifre', error_2.ErrorCode.INVALID_CREDENTIALS);
         }
-        // Şifre kontrolü yap (geçici olarak direkt karşılaştırma yapıyoruz)
-        const isValidPassword = credentials.password === user.password;
+        logger_1.log.info('Kullanıcı bulundu, şifre kontrolü yapılıyor', {
+            userId: user.id,
+            hashedPasswordLength: (_a = user.password) === null || _a === void 0 ? void 0 : _a.length,
+            providedPasswordLength: (_b = credentials.password) === null || _b === void 0 ? void 0 : _b.length
+        });
+        const isValidPassword = yield bcrypt_1.default.compare(credentials.password, user.password)
+            .catch(err => {
+            logger_1.log.error('Şifre karşılaştırma hatası', { error: err.message });
+            throw new error_1.AuthenticationError(`Şifre doğrulama hatası: ${err.message}`, error_2.ErrorCode.INVALID_CREDENTIALS);
+        });
+        logger_1.log.info('Şifre kontrolü tamamlandı', { isValid: isValidPassword });
         if (!isValidPassword) {
-            throw new Error('Geçersiz şifre');
+            logger_1.log.warn('Geçersiz şifre', { userId: user.id });
+            throw new error_1.AuthenticationError('Geçersiz kullanıcı adı veya şifre', error_2.ErrorCode.INVALID_CREDENTIALS);
         }
-        // JWT token oluştur
         const token = (0, jwt_utils_1.generateToken)(user);
-        // Hassas bilgileri çıkar ve token ile yanıt döndür
+        logger_1.log.info('Giriş başarılı', { userId: user.id });
         const { password } = user, userWithoutPassword = __rest(user, ["password"]);
         return Object.assign(Object.assign({}, userWithoutPassword), { token });
     }
     catch (error) {
-        console.error('Giriş sırasında hata:', error instanceof Error ? error.message : 'Bilinmeyen hata');
-        throw error;
+        // Özel hataları tekrar fırlat
+        if (error instanceof error_1.AuthenticationError || error instanceof error_1.DatabaseError) {
+            throw error;
+        }
+        // Tanımlanmamış hatalar için logla ve AuthenticationError oluştur
+        logger_1.log.error('Giriş sırasında tanımlanmamış hata:', {
+            error: error instanceof Error ? error.message : 'Bilinmeyen hata',
+            stack: error instanceof Error ? error.stack : undefined
+        });
+        throw new error_1.AuthenticationError('Giriş yapılırken bir hata oluştu', error_2.ErrorCode.INVALID_CREDENTIALS, { originalError: error instanceof Error ? error.message : 'Bilinmeyen hata' });
     }
 });
 exports.login = login;

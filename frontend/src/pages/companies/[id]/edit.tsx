@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
-import MainLayout from '../../layouts/MainLayout';
-import CompanyForm from '../../components/CompanyForm';
-import { RootState, AppDispatch } from '../../redux/store';
-import { getCompanies, updateCompanyAsync } from '../../redux/slices/companySlice';
+import { AppDispatch, RootState } from '@/redux/store';
+import { getCompanies, updateCompanyAsync } from '@/redux/slices/companySlice';
+import MainLayout from '@/layouts/MainLayout';
+import CompanyForm from '@/components/CompanyForm';
+
 
 const EditCompanyPage: React.FC = () => {
   const router = useRouter();

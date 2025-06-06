@@ -44,11 +44,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.login = exports.register = void 0;
 const authService = __importStar(require("../services/auth.service"));
+const error_1 = require("../utils/error");
+const error_2 = require("../types/error");
 /**
  * @swagger
  * /auth/register:
  *   post:
- *     summary: Yeni kullanıcı kaydı oluşturur
+ *     summary: Yeni kullanıcı kaydı oluşturur (Sadece System Admin ve Company Admin kullanabilir)
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -106,9 +108,12 @@ const authService = __importStar(require("../services/auth.service"));
  *       409:
  *         description: Kullanıcı adı veya email zaten kullanımda
  */
-const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const register = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userData = req.body;
+        if (!userData.email || !userData.password || !userData.username) {
+            throw new error_1.ValidationError('Email, şifre ve kullanıcı adı zorunludur');
+        }
         const newUser = yield authService.register(userData);
         res.status(201).json({
             status: 'success',
@@ -117,19 +122,10 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
     }
     catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Kayıt işlemi sırasında bir hata oluştu';
-        // 409 (Conflict) durumu için kontrol
-        if (errorMessage.includes('zaten kayıtlı')) {
-            res.status(409).json({
-                status: 'error',
-                message: errorMessage
-            });
-            return;
+        if (error instanceof Error && error.message.includes('zaten kayıtlı')) {
+            return next(new error_1.DatabaseError(error.message, error_2.ErrorCode.DUPLICATE_ENTRY));
         }
-        res.status(400).json({
-            status: 'error',
-            message: errorMessage
-        });
+        next(error);
     }
 });
 exports.register = register;
@@ -146,12 +142,13 @@ exports.register = register;
  *           schema:
  *             type: object
  *             required:
- *               - username
+ *               - email
  *               - password
  *             properties:
- *               username:
+ *               email:
  *                 type: string
- *                 example: "johndoe"
+ *                 format: email
+ *                 example: "john@example.com"
  *               password:
  *                 type: string
  *                 format: password

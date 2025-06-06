@@ -33,13 +33,19 @@ const LoginPage = () => {
   const router = useRouter();
   const [showAlert, setShowAlert] = useState(false);
 
+  // Error state değişikliklerini izle ve alert'i göster
+  React.useEffect(() => {
+    if (error) {
+      setShowAlert(true);
+    }
+  }, [error]);
+
   // Eğer kullanıcı zaten giriş yapmışsa dashboard'a yönlendir
   React.useEffect(() => {
     if (isAuthenticated) {
       router.replace('/dashboard');
     }
   }, [isAuthenticated, router]);
-
   // Form gönderimi
   const handleSubmit = async (values: { email: string; password: string }) => {
     setShowAlert(false);
@@ -94,18 +100,19 @@ const LoginPage = () => {
             </Typography>
             <Typography component="h2" variant="h6" mb={3}>
               Giriş Yap
-            </Typography>
-
-            {error && showAlert && (
+            </Typography>            {error && showAlert && (
               <Alert
                 severity="error"
+                variant="filled"
                 sx={{ width: '100%', mb: 2 }}
                 onClose={() => {
                   clearError();
                   setShowAlert(false);
                 }}
               >
-                {error}
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {error}
+                </Typography>
               </Alert>
             )}
 

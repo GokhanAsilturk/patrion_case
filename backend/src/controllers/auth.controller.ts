@@ -140,26 +140,28 @@ export const register = async (req: AuthRequest, res: Response, next: Function):
  *       401:
  *         description: Geçersiz kimlik bilgileri
  */
-export const login = async (req: AuthRequest, res: Response, next: Function): Promise<void> => {
+export const login = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const credentials = req.body;
+    const result = await authService.login(credentials);
     
-    if (!credentials.email || !credentials.password) {
-      throw new ValidationError('Email ve şifre zorunludur');
-    }
+    // Auth service'ten gelen result zaten user bilgileri + token içeriyor
+    const { token, ...user } = result;
     
-    const user = await authService.login(credentials);
+    // Debug için response'u logla
+    const responseData = { token, user };
+    console.log('Login response data:', JSON.stringify(responseData, null, 2));
     
     res.status(200).json({
       status: 'success',
       message: 'Giriş başarılı',
-      data: { user }
+      data: responseData
     });
   } catch (error) {
-    if (error instanceof Error) {
-      return next(new AuthenticationError(error.message, ErrorCode.INVALID_CREDENTIALS));
-    }
-    
-    next(error);
+    const errorMessage = error instanceof Error ? error.message : 'Giriş yapılamadı';
+    res.status(401).json({
+      status: 'error',
+      message: errorMessage
+    });
   }
 };

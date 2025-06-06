@@ -54,25 +54,40 @@ export const register = async (userData: UserInput): Promise<UserResponse> => {
 
 export const login = async (credentials: UserLogin): Promise<UserResponse> => {
   try {
+    log.info('Giriş deneme başlatıldı', { email: credentials.email });
+    
     const user = await userModel.findUserByEmail(credentials.email)
       .catch(err => {
+        log.error('Kullanıcı arama hatası', { error: err.message });
         throw new DatabaseError(`Kullanıcı aranırken veritabanı hatası: ${err.message}`, ErrorCode.DB_QUERY_ERROR);
       });
     
     if (!user) {
+      log.warn('Kullanıcı bulunamadı', { email: credentials.email });
       throw new AuthenticationError('Geçersiz kullanıcı adı veya şifre', ErrorCode.INVALID_CREDENTIALS);
     }
 
+    log.info('Kullanıcı bulundu, şifre kontrolü yapılıyor', { 
+      userId: user.id, 
+      hashedPasswordLength: user.password?.length,
+      providedPasswordLength: credentials.password?.length 
+    });
+
     const isValidPassword = await bcrypt.compare(credentials.password, user.password)
       .catch(err => {
+        log.error('Şifre karşılaştırma hatası', { error: err.message });
         throw new AuthenticationError(`Şifre doğrulama hatası: ${err.message}`, ErrorCode.INVALID_CREDENTIALS);
       });
     
+    log.info('Şifre kontrolü tamamlandı', { isValid: isValidPassword });
+    
     if (!isValidPassword) {
+      log.warn('Geçersiz şifre', { userId: user.id });
       throw new AuthenticationError('Geçersiz kullanıcı adı veya şifre', ErrorCode.INVALID_CREDENTIALS);
     }
 
     const token = generateToken(user);
+    log.info('Giriş başarılı', { userId: user.id });
 
     const { password, ...userWithoutPassword } = user;
     return {

@@ -1,0 +1,108 @@
+services:
+  be_container:
+    container_name: be_container
+    image: patrion_case_backend
+    build: ./backend
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      influxdb:
+        condition: service_started
+      mqtt:
+        condition: service_started
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=1234
+      - DB_NAME=patrion_case
+      - JWT_SECRET=patrion_jwt_secret_key
+      - JWT_EXPIRES_IN=1d
+      - MQTT_BROKER=mqtt://mqtt:1883
+      - MQTT_CLIENT_ID=sensor_tracking_server
+      - INFLUX_URL=http://influxdb:8086
+      - INFLUX_TOKEN=mCjO945P8QqKpYoLTcMpqovvVRjIzMWNH52u6PgRR9yRYrMXs5YGAPgTJ-_NfuLC9wf6ADVLBKIUacw7UTxVHw==
+      - INFLUX_ORG=sensor_org
+      - INFLUX_BUCKET=sensor_data
+    volumes:
+      - ./backend/logs:/usr/src/app/logs
+    restart: unless-stopped
+  
+  fe_container:
+    container_name: fe_container
+    image: patrion_case_frontend
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: "http://be_container:4000"
+    ports:
+      - "4001:4001"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://be_container:4000
+      - PORT=4001
+    depends_on:
+      - be_container
+    restart: unless-stopped
+  
+  postgres:
+    container_name: patrion_case_postgres
+    image: patrion_case_postgres
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=1234
+      - POSTGRES_DB=patrion_case
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  influxdb:
+    container_name: patrion_case_influxdb
+    image: patrion_case_influxdb
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=sensor_org
+      - DOCKER_INFLUXDB_INIT_BUCKET=sensor_data
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mCjO945P8QqKpYoLTcMpqovvVRjIzMWNH52u6PgRR9yRYrMXs5YGAPgTJ-_NfuLC9wf6ADVLBKIUacw7UTxVHw==
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    restart: unless-stopped
+
+  mqtt:
+    container_name: patrion_case_mqtt
+    image: patrion_case_mqtt
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./backend/mosquitto/config:/mosquitto/config
+      - ./backend/mosquitto/data:/mosquitto/data
+      - ./backend/mosquitto/log:/mosquitto/log
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  influxdb_data:

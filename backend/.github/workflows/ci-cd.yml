@@ -47,7 +47,7 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "PORT=3000" > .env
+          echo "PORT=4000" > .env
           echo "NODE_ENV=test" >> .env
           echo "DB_HOST=localhost" >> .env
           echo "DB_PORT=5432" >> .env
@@ -98,7 +98,6 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/patrion-sensor-tracker:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/patrion-sensor-tracker:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/patrion-sensor-tracker:buildcache,mode=max
-
   deploy:
     needs: docker-build
     runs-on: ubuntu-latest
@@ -116,4 +115,4 @@ jobs:
             cd ~/patrion_backend_case
             git pull origin main
             docker-compose pull
-            docker-compose up -d 
+            docker-compose up -d

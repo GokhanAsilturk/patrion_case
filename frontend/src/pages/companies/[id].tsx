@@ -3,8 +3,9 @@ import { useRouter } from 'next/router';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
 import { getCompanies } from '../../redux/slices/companySlice';
-import MainLayout from '../../layouts/MainLayout';
+
 import { Typography, Paper } from '@mui/material';
+import MainLayout from '@/layouts/MainLayout';
 
 const CompanyDetailPage: React.FC = () => {
   const router = useRouter();

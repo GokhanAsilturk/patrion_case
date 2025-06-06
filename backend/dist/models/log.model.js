@@ -22,6 +22,7 @@ const createUserLogsTable = () => __awaiter(void 0, void 0, void 0, function* ()
       action VARCHAR(50) NOT NULL,
       details JSONB,
       ip_address VARCHAR(50),
+      user_agent VARCHAR(255),
       timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
       created_at TIMESTAMP NOT NULL DEFAULT NOW(),
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
