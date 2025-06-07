@@ -7,6 +7,24 @@ const rate_limiter_middleware_1 = require("../middlewares/rate-limiter.middlewar
 const router = (0, express_1.Router)();
 /**
  * @swagger
+ * /sensors:
+ *   get:
+ *     summary: Tüm sensörleri getirir
+ *     description: Sistemdeki tüm sensörlerin listesini veritabanından çeker
+ *     tags: [Sensors]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sensörler başarıyla getirildi
+ *       401:
+ *         description: Kimlik doğrulama hatası
+ *       500:
+ *         description: Sunucu hatası
+ */
+router.get('/', auth_middleware_1.authenticate, rate_limiter_middleware_1.standardRateLimiter, sensor_controller_1.getSensors);
+/**
+ * @swagger
  * /sensors/{sensorId}/timeseries:
  *   get:
  *     summary: Belirli bir sensörün zaman serisi verilerini getirir

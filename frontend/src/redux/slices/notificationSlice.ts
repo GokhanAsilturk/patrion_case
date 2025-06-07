@@ -11,17 +11,27 @@ const initialState: NotificationState = {
 
 export const getNotifications = createAsyncThunk(
   'notifications/getNotifications',
-  async (_, { getState }) => {
-        const state = getState() as { auth: { user: { role: UserRole; companyId?: string } } };
-    const { role, companyId } = state.auth.user;
-    
-    // Admin tüm bildirimleri görebilir, user sadece kendi şirketine ait bildirimleri görebilir
-    const endpoint = role === UserRole.ADMIN 
-      ? '/notifications'
-      : `/companies/${companyId}/notifications`;
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const state = getState() as { auth: { user: { role: UserRole; companyId?: string } | null } };
       
-    const response = await api.get(endpoint);
-    return response.data;
+      // Kullanıcı null kontrolü
+      if (!state.auth.user) {
+        return rejectWithValue('Kullanıcı oturumu bulunamadı. Lütfen tekrar giriş yapın.');
+      }
+      
+      const { role, companyId } = state.auth.user;
+      
+      // Admin tüm bildirimleri görebilir, user sadece kendi şirketine ait bildirimleri görebilir
+      const endpoint = role === UserRole.ADMIN 
+        ? '/notifications'
+        : `/companies/${companyId}/notifications`;
+        
+      const response = await api.get(endpoint);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Bildirimler alınamadı.');
+    }
   }
 );
 

@@ -1,7 +1,6 @@
 export interface Company {
   id: string;
   name: string;
-  address?: string;
-  phone?: string;
-  // Diğer alanlar eklenebilir
+  description: string;
+  status: string;
 }

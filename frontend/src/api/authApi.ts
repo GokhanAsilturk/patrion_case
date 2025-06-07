@@ -52,9 +52,8 @@ const authApi = {  login: async (credentials: LoginCredentials): Promise<LoginRe
     const response = await api.get('/users/profile');
     return response.data.data.user;
   },
-  
-  logout: async (): Promise<void> => {
-    await api.post('/auth/logout');
+    logout: async (): Promise<void> => {
+    // Backend'de logout endpoint'i olmadığı için sadece token'ı siliyoruz
     localStorage.removeItem('token');
   },
   

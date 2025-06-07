@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { styled, useTheme } from '@mui/material/styles';
 import { UserRole } from '../types/user';
+import Link from 'next/link';
 import {
   Box,
   Drawer,
@@ -18,6 +19,7 @@ import {
   Menu,
   MenuItem,
   Container,
+  Chip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -101,7 +103,8 @@ const menuItems: MenuItem[] = [
   {
     text: 'Kullanıcılar',
     icon: <PeopleIcon />,
-    path: '/users',    roles: [UserRole.ADMIN],
+    path: '/users',
+    roles: [UserRole.ADMIN],
   },
   {
     text: 'Şirketler',
@@ -112,7 +115,8 @@ const menuItems: MenuItem[] = [
   {
     text: 'Sensörler',
     icon: <SensorsIcon />,
-    path: '/sensors',    roles: [UserRole.ADMIN, UserRole.USER],
+    path: '/sensors',
+    roles: [UserRole.ADMIN, UserRole.USER],
   },
   {
     text: 'Loglar',
@@ -199,8 +203,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Sensör İzleme Platformu
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{ flexGrow: 1 }}
+          >
+            <Link
+              href="/dashboard"
+              style={{
+                color: 'inherit',
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Sensör İzleme Platformu
+            </Link>
           </Typography>
           <IconButton
             size="large"
@@ -256,8 +274,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         variant="persistent"
         anchor="left"
         open={open}
-      >
-        <DrawerHeader>
+      >        <DrawerHeader>
           <Typography variant="h6" sx={{ flexGrow: 1, ml: 2 }}>
             Kontrol Paneli
           </Typography>
@@ -269,7 +286,109 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             )}
           </IconButton>
         </DrawerHeader>
-        <Divider />
+        <Divider />        {/* Ana Sayfalar - Hızlı Erişim */}
+        <Box sx={{ py: 1 }}>
+          <Typography 
+            variant="subtitle2" 
+            color="text.secondary" 
+            sx={{ 
+              fontWeight: 600, 
+              textTransform: 'uppercase', 
+              letterSpacing: 0.5, 
+              fontSize: '0.75rem', 
+              px: 2, 
+              mb: 1 
+            }}
+          >
+            Hızlı Erişim
+          </Typography>
+          <List dense>
+            <ListItem disablePadding>
+              <ListItemButton 
+                selected={router.pathname === '/companies'} 
+                onClick={() => handleNavigate('/companies')}
+                sx={{
+                  borderLeft: router.pathname === '/companies' ? `4px solid ${theme.palette.primary.main}` : '4px solid transparent',
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <BusinessIcon fontSize="small" color={router.pathname === '/companies' ? 'primary' : 'inherit'} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Şirketler" 
+                  primaryTypographyProps={{ 
+                    fontSize: '0.9rem',
+                    fontWeight: router.pathname === '/companies' ? 600 : 400 
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+            
+            <ListItem disablePadding>
+              <ListItemButton 
+                selected={router.pathname === '/sensors'} 
+                onClick={() => handleNavigate('/sensors')}
+                sx={{
+                  borderLeft: router.pathname === '/sensors' ? `4px solid ${theme.palette.secondary.main}` : '4px solid transparent',
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <SensorsIcon fontSize="small" color={router.pathname === '/sensors' ? 'secondary' : 'inherit'} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Sensörler" 
+                  primaryTypographyProps={{ 
+                    fontSize: '0.9rem',
+                    fontWeight: router.pathname === '/sensors' ? 600 : 400 
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+            
+            <ListItem disablePadding>
+              <ListItemButton 
+                selected={router.pathname === '/users'} 
+                onClick={() => handleNavigate('/users')}
+                sx={{
+                  borderLeft: router.pathname === '/users' ? `4px solid ${theme.palette.success.main}` : '4px solid transparent',
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <PeopleIcon fontSize="small" color={router.pathname === '/users' ? 'success' : 'inherit'} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Kullanıcılar" 
+                  primaryTypographyProps={{ 
+                    fontSize: '0.9rem',
+                    fontWeight: router.pathname === '/users' ? 600 : 400 
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+            
+            <ListItem disablePadding>
+              <ListItemButton 
+                selected={router.pathname === '/notifications'} 
+                onClick={() => handleNavigate('/notifications')}
+                sx={{
+                  borderLeft: router.pathname === '/notifications' ? `4px solid ${theme.palette.warning.main}` : '4px solid transparent',
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <NotificationsIcon fontSize="small" color={router.pathname === '/notifications' ? 'warning' : 'inherit'} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Bildirimler" 
+                  primaryTypographyProps={{ 
+                    fontSize: '0.9rem',
+                    fontWeight: router.pathname === '/notifications' ? 600 : 400 
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Box>
+        <Divider sx={{ mt: 0, mb: 0 }} />
         <List>
           {filteredMenuItems.map((item) => (
             <ListItem key={item.text} disablePadding>

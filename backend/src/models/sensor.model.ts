@@ -118,6 +118,31 @@ export const getSensorsByCompanyId = async (company_id: number): Promise<Sensor[
   }
 };
 
+/**
+ * Tüm sensörleri getirir
+ * @returns {Promise<Sensor[]>} Sensör listesi
+ */
+export const getAllSensors = async (): Promise<Sensor[]> => {
+  try {
+    const query = 'SELECT * FROM sensors ORDER BY created_at DESC';
+    const result = await pool.query(query);
+    
+    return result.rows.map(row => ({
+      id: row.id,
+      sensor_id: row.sensor_id,
+      name: row.name,
+      description: row.description,
+      company_id: row.company_id,
+      status: row.status as 'active' | 'inactive' | 'maintenance',
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }));
+  } catch (error) {
+    console.error('Tüm sensörleri getirirken hata:', error instanceof Error ? error.message : 'Bilinmeyen hata');
+    throw error;
+  }
+};
+
 export const updateSensorStatus = async (id: number, status: 'active' | 'inactive' | 'maintenance'): Promise<Sensor | null> => {
   const query = `
     UPDATE sensors
@@ -133,4 +158,4 @@ export const updateSensorStatus = async (id: number, status: 'active' | 'inactiv
     console.error('Sensör durumu güncellenirken hata:', error instanceof Error ? error.message : 'Bilinmeyen hata');
     throw error;
   }
-}; 
+};

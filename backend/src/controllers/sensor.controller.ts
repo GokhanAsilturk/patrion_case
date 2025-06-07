@@ -1,11 +1,53 @@
 import { Response } from 'express';
-import { getSensorBySensorId } from '../models/sensor.model';
+import { getSensorBySensorId, getAllSensors } from '../models/sensor.model';
 import { AuthRequest } from '../types/auth';
 import { createUserLog } from '../models/log.model';
 import { LogAction } from '../types/log';
 import { querySensorData, queryAggregatedData } from '../services/influxdb.service';
 import { parseLocalDate } from '../utils/date-utils';
 import { publishSensorData, io } from '../socket';
+
+/**
+ * @swagger
+ * /sensors:
+ *   get:
+ *     summary: Tüm sensörleri getirir
+ *     description: Sistemdeki tüm sensörlerin listesini veritabanından çeker
+ *     tags: [Sensors]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sensörler başarıyla getirildi
+ *       401:
+ *         description: Kimlik doğrulama hatası
+ *       500:
+ *         description: Sunucu hatası
+ */
+export const getSensors = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const sensors = await getAllSensors();
+    
+    // Log kaydı oluştur
+    await createUserLog({
+      user_id: req.user?.id ?? 0,
+      action: LogAction.VIEWED_SENSOR_DATA,
+      details: { action: 'listed_all_sensors' },
+      ip_address: req.ip
+    });
+    
+    res.json({
+      status: 'success',
+      results: sensors.length,
+      data: { sensors }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Sensörler listelenirken hata oluştu'
+    });
+  }
+};
 
 /**
  * @swagger
@@ -133,8 +175,8 @@ export const getSensorTimeseriesData = async (req: AuthRequest, res: Response): 
  *         name: field
  *         schema:
  *           type: string
- *         description: Analiz edilecek alan
- *       - in: query *         name: window
+ *         description: Analiz edilecek alan *       - in: query
+ *         name: window
  *         schema:
  *           type: string
  *           pattern: '^[0-9]+[hdwmy]$'
@@ -457,3 +499,5 @@ export const sendNotification = async (req: AuthRequest, res: Response): Promise
     });
   }
 };
+
+// Bu fonksiyon kaldırıldı, getSensors fonksiyonu tüm sensörleri getirmek için kullanılıyor.

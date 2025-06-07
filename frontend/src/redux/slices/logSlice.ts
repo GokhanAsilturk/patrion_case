@@ -5,11 +5,21 @@ import api from '../../api/axios';
 
 export const getLogs = createAsyncThunk(
   'logs/getLogs',
-  async (_, { getState }) => {
-    const state = getState() as { auth: { user: { role: UserRole } } };
-    const isAdmin = state.auth.user?.role === UserRole.ADMIN;
-    const response = await api.get(isAdmin ? '/logs' : '/logs/user');
-    return response.data;
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const state = getState() as { auth: { user: { role: UserRole } | null } };
+      
+      // Kullanıcı null kontrolü
+      if (!state.auth.user) {
+        return rejectWithValue('Kullanıcı oturumu bulunamadı. Lütfen tekrar giriş yapın.');
+      }
+      
+      const isAdmin = state.auth.user.role === UserRole.ADMIN;
+      const response = await api.get(isAdmin ? '/logs' : '/logs/user');
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Log kayıtları alınamadı.');
+    }
   }
 );
 

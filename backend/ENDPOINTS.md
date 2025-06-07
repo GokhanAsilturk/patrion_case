@@ -78,6 +78,10 @@ Aşağıda tüm backend endpointleri, açıklamaları ve dönüş tipleriyle bir
 
 ## Sensör (sensor.controller.ts)
 
+- **GET /sensors**
+  - Tüm sensörleri listeler
+  - Dönüş: `{ status: string, results: number, data: { sensors: Sensor[] } }`
+
 - **GET /sensors/{sensorId}/timeseries**
   - Sensör zaman serisi verisi getirir
   - Dönüş: `{ status: string, data: { sensor_id: string, start_time: number, end_time: number, readings: any[] } }`

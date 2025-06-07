@@ -41,6 +41,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.login = exports.register = void 0;
 const authService = __importStar(require("../services/auth.service"));
@@ -182,11 +193,16 @@ exports.register = register;
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const credentials = req.body;
-        const user = yield authService.login(credentials);
+        const result = yield authService.login(credentials);
+        // Auth service'ten gelen result zaten user bilgileri + token içeriyor
+        const { token } = result, user = __rest(result, ["token"]);
+        // Debug için response'u logla
+        const responseData = { token, user };
+        console.log('Login response data:', JSON.stringify(responseData, null, 2));
         res.status(200).json({
             status: 'success',
             message: 'Giriş başarılı',
-            data: { user }
+            data: responseData
         });
     }
     catch (error) {

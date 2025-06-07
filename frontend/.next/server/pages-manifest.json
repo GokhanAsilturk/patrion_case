@@ -2,7 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/login": "pages/login.js",
   "/dashboard": "pages/dashboard.js",
-  "/profile": "pages/profile.js"
+  "/login": "pages/login.js",
+  "/unauthorized": "pages/unauthorized.js",
+  "/": "pages/index.js"
 }

@@ -1,9 +1,28 @@
 import { Router } from 'express';
-import { getSensorTimeseriesData, getSensorAnalytics, publishSensorDataManually, sendNotification } from '../controllers/sensor.controller';
+import { getSensors, getSensorTimeseriesData, getSensorAnalytics, publishSensorDataManually, sendNotification } from '../controllers/sensor.controller';
 import { authenticate } from '../middlewares/auth.middleware';
 import { standardRateLimiter } from '../middlewares/rate-limiter.middleware';
 
 const router = Router();
+
+/**
+ * @swagger
+ * /sensors:
+ *   get:
+ *     summary: Tüm sensörleri getirir
+ *     description: Sistemdeki tüm sensörlerin listesini veritabanından çeker
+ *     tags: [Sensors]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sensörler başarıyla getirildi
+ *       401:
+ *         description: Kimlik doğrulama hatası
+ *       500:
+ *         description: Sunucu hatası
+ */
+router.get('/', authenticate, standardRateLimiter, getSensors);
 
 /**
  * @swagger
@@ -187,4 +206,4 @@ router.post('/:sensorId/publish', authenticate, standardRateLimiter, publishSens
  */
 router.post('/notifications', authenticate, standardRateLimiter, sendNotification);
 
-export default router; 
+export default router;

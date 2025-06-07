@@ -9,11 +9,25 @@ const CompanyList: React.FC = () => {
   const { companies, loading, error } = useSelector((state: RootState) => state.companies);
 
   useEffect(() => {
-    dispatch(getCompanies());
+    try {
+      console.log('Şirket verilerini getirme işlemi başlatılıyor...');
+      dispatch(getCompanies())
+        .then((result) => {
+          console.log('Şirket verisi başarıyla alındı:', result);
+        })
+        .catch((error) => {
+          console.error('Şirket verisi alınırken hata oluştu:', error);
+        });
+    } catch (error) {
+      console.error('Dispatch sırasında hata:', error);
+    }
   }, [dispatch]);
 
   if (loading) return <CircularProgress />;
   if (error) return <Typography color="error">{error}</Typography>;
+
+  // Dizi kontrolü ekleyelim
+  const companiesList = Array.isArray(companies) ? companies : [];
 
   return (
     <Paper sx={{ p: 2 }}>
@@ -22,18 +36,24 @@ const CompanyList: React.FC = () => {
         <TableHead>
           <TableRow>
             <TableCell>Ad</TableCell>
-            <TableCell>Adres</TableCell>
-            <TableCell>Telefon</TableCell>
+            <TableCell>Durum</TableCell>
+            <TableCell>Açıklama</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {companies.map((company) => (
-            <TableRow key={company.id}>
-              <TableCell>{company.name}</TableCell>
-              <TableCell>{company.address || '-'}</TableCell>
-              <TableCell>{company.phone || '-'}</TableCell>
+          {companiesList.length > 0 ? (
+            companiesList.map((company) => (
+              <TableRow key={company.id}>
+                <TableCell>{company.name}</TableCell>
+                <TableCell>{company.status ?? '-'}</TableCell>
+                <TableCell>{company.description ?? '-'}</TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={3} align="center">Şirket bulunamadı</TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
     </Paper>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Container,
@@ -9,23 +9,23 @@ import {
   Grid,
   Alert,
   CircularProgress,
-} from '@mui/material';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import { useAuth } from '../contexts/AuthContext';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
+} from "@mui/material";
+import { useFormik } from "formik";
+import * as yup from "yup";
+import { useAuth } from "../contexts/AuthContext";
+import { useRouter } from "next/router";
+import Head from "next/head";
 
 // Form doğrulama şeması
 const validationSchema = yup.object({
   email: yup
     .string()
-    .email('Geçerli bir e-posta adresi giriniz')
-    .required('E-posta adresi zorunludur'),
+    .email("Geçerli bir e-posta adresi giriniz")
+    .required("E-posta adresi zorunludur"),
   password: yup
     .string()
-    .min(6, 'Şifre en az 6 karakter olmalıdır')
-    .required('Şifre zorunludur'),
+    .min(6, "Şifre en az 6 karakter olmalıdır")
+    .required("Şifre zorunludur"),
 });
 
 const LoginPage = () => {
@@ -43,7 +43,7 @@ const LoginPage = () => {
   // Eğer kullanıcı zaten giriş yapmışsa dashboard'a yönlendir
   React.useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/dashboard');
+      router.replace("/dashboard");
     }
   }, [isAuthenticated, router]);
   // Form gönderimi
@@ -53,7 +53,7 @@ const LoginPage = () => {
       await login(values);
       // Login başarılı olduğunda AuthContext bizi yönlendirecek
     } catch (err) {
-      console.error('Login error:', err);
+      console.error("Login error:", err);
       setShowAlert(true);
       // Hata zaten AuthContext tarafından yönetiliyor
     }
@@ -62,8 +62,8 @@ const LoginPage = () => {
   // Form yönetimi
   const formik = useFormik({
     initialValues: {
-      email: '',
-      password: '',
+      email: "admin@system.com",
+      password: "admin123",
     },
     validationSchema: validationSchema,
     onSubmit: handleSubmit,
@@ -77,11 +77,11 @@ const LoginPage = () => {
 
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          bgcolor: 'background.default',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          bgcolor: "background.default",
         }}
       >
         <Container maxWidth="xs">
@@ -89,9 +89,9 @@ const LoginPage = () => {
             elevation={3}
             sx={{
               p: 4,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
               borderRadius: 2,
             }}
           >
@@ -100,11 +100,12 @@ const LoginPage = () => {
             </Typography>
             <Typography component="h2" variant="h6" mb={3}>
               Giriş Yap
-            </Typography>            {error && showAlert && (
+            </Typography>{" "}
+            {error && showAlert && (
               <Alert
                 severity="error"
                 variant="filled"
-                sx={{ width: '100%', mb: 2 }}
+                sx={{ width: "100%", mb: 2 }}
                 onClose={() => {
                   clearError();
                   setShowAlert(false);
@@ -115,8 +116,12 @@ const LoginPage = () => {
                 </Typography>
               </Alert>
             )}
-
-            <Box component="form" onSubmit={formik.handleSubmit} noValidate sx={{ mt: 1 }}>
+            <Box
+              component="form"
+              onSubmit={formik.handleSubmit}
+              noValidate
+              sx={{ mt: 1 }}
+            >
               <TextField
                 sx={{ mt: 2 }}
                 required
@@ -145,7 +150,9 @@ const LoginPage = () => {
                 value={formik.values.password}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                error={formik.touched.password && Boolean(formik.errors.password)}
+                error={
+                  formik.touched.password && Boolean(formik.errors.password)
+                }
                 helperText={formik.touched.password && formik.errors.password}
                 disabled={isLoading}
               />
@@ -156,7 +163,7 @@ const LoginPage = () => {
                 sx={{ mt: 3, mb: 2 }}
                 disabled={isLoading}
               >
-                {isLoading ? <CircularProgress size={24} /> : 'Giriş Yap'}
+                {isLoading ? <CircularProgress size={24} /> : "Giriş Yap"}
               </Button>
               <Grid container justifyContent="flex-end">
                 <Grid item>

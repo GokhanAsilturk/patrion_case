@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateSensorStatus = exports.getSensorsByCompanyId = exports.getSensorBySensorId = exports.getSensorById = exports.createSensor = exports.createSensorDataTable = exports.createSensorsTable = void 0;
+exports.getAllSensors = exports.updateSensorStatus = exports.getSensorsByCompanyId = exports.getSensorBySensorId = exports.getSensorById = exports.createSensor = exports.createSensorDataTable = exports.createSensorsTable = void 0;
 const database_1 = __importDefault(require("../config/database"));
 const createSensorsTable = () => __awaiter(void 0, void 0, void 0, function* () {
     const createTableQuery = `
@@ -147,3 +147,19 @@ const updateSensorStatus = (id, status) => __awaiter(void 0, void 0, void 0, fun
     }
 });
 exports.updateSensorStatus = updateSensorStatus;
+const getAllSensors = () => __awaiter(void 0, void 0, void 0, function* () {
+    const query = `
+    SELECT id, sensor_id, name, description, company_id, status, created_at as "createdAt", updated_at as "updatedAt"
+    FROM sensors
+    ORDER BY company_id, id;
+  `;
+    try {
+        const result = yield database_1.default.query(query);
+        return result.rows;
+    }
+    catch (error) {
+        console.error('Tüm sensörler listelenirken hata:', error instanceof Error ? error.message : 'Bilinmeyen hata');
+        throw error;
+    }
+});
+exports.getAllSensors = getAllSensors;

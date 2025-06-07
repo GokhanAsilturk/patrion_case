@@ -1,12 +1,16 @@
 import React from 'react';
 import MainLayout from '../layouts/MainLayout';
 import SensorList from '../components/SensorList';
+import ProtectedRoute from '../components/ProtectedRoute';
+import { UserRole } from '../types/user';
 
 const SensorsPage: React.FC = () => {
   return (
-    <MainLayout>
-      <SensorList />
-    </MainLayout>
+    <ProtectedRoute requiredRoles={[UserRole.ADMIN, UserRole.USER]}>
+      <MainLayout>
+        <SensorList />
+      </MainLayout>
+    </ProtectedRoute>
   );
 };
 

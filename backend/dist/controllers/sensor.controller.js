@@ -9,13 +9,55 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendNotification = exports.publishSensorDataManually = exports.getSensorAnalytics = exports.getSensorTimeseriesData = void 0;
+exports.sendNotification = exports.publishSensorDataManually = exports.getSensorAnalytics = exports.getSensorTimeseriesData = exports.getSensors = void 0;
 const sensor_model_1 = require("../models/sensor.model");
 const log_model_1 = require("../models/log.model");
 const log_1 = require("../types/log");
 const influxdb_service_1 = require("../services/influxdb.service");
 const date_utils_1 = require("../utils/date-utils");
 const socket_1 = require("../socket");
+/**
+ * @swagger
+ * /sensors:
+ *   get:
+ *     summary: Tüm sensörleri getirir
+ *     description: Sistemdeki tüm sensörlerin listesini veritabanından çeker
+ *     tags: [Sensors]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sensörler başarıyla getirildi
+ *       401:
+ *         description: Kimlik doğrulama hatası
+ *       500:
+ *         description: Sunucu hatası
+ */
+const getSensors = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    try {
+        const sensors = yield (0, sensor_model_1.getAllSensors)();
+        // Log kaydı oluştur
+        yield (0, log_model_1.createUserLog)({
+            user_id: (_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : 0,
+            action: log_1.LogAction.VIEWED_SENSOR_DATA,
+            details: { action: 'listed_all_sensors' },
+            ip_address: req.ip
+        });
+        res.json({
+            status: 'success',
+            results: sensors.length,
+            data: { sensors }
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: error instanceof Error ? error.message : 'Sensörler listelenirken hata oluştu'
+        });
+    }
+});
+exports.getSensors = getSensors;
 /**
  * @swagger
  * /sensors/{sensorId}/timeseries:
